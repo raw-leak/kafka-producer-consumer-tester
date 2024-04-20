@@ -33,7 +33,6 @@ fmt:
 
 ## lint: Run linting checks
 lint: fmt
-
 	@echo "Running go vet..."
 	@go vet ./...
 
@@ -45,6 +44,16 @@ clean:
 	@echo "  >  Cleaning build cache"
 	@go clean
 
+## rock: Runs produces-consumer test
+rock:
+	@echo "  >  Fasten your seatbelts, let's take of 🚀"
+	./scripts/rock.sh
+
+## rock-local: Runs produces-consumer test in local
+rock-local:
+	@echo "  >  Fasten your seatbelts, let's take of 🚀 in local"
+	./scripts/rock-local.sh
+
 ## help: Show this help message
 help: Makefile
 	@echo
@@ -53,4 +62,4 @@ help: Makefile
 	@sed -n 's/^##//p' $< | column -t -s ':' |  sed -e 's/^/ /'
 	@echo
 
-.PHONY: build fmt clean help
+.PHONY: build fmt clean run run-local help
