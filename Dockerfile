@@ -16,6 +16,8 @@ RUN make build
 
 FROM golang:1.22.2-alpine3.19
 
+RUN apk add --no-cache
+
 WORKDIR /root/
 
 COPY --from=builder /app/build/kafka-producer-consumer-tester .
