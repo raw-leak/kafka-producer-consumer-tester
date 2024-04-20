@@ -3,6 +3,7 @@ package producer
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 )
@@ -32,6 +33,8 @@ func New(cfg ProducerConfig, l Logger) (*Producer, error) {
 	cl, err := kgo.NewClient(
 		kgo.SeedBrokers(cfg.Seeds...),
 		kgo.DefaultProduceTopic(cfg.Topic),
+		kgo.ProducerLinger(time.Millisecond*5), // Set the maximum delay before sending a batch, allowing more records to accumulate and enhancing batch size efficiency up to the configured batch size limit
+		kgo.ProducerBatchMaxBytes(1_000_000),   // Set max bytes of a producer batch to ~1MB (aprox. 1K at once)
 	)
 	if err != nil {
 		l.Errorf("creating producer client: %v", err)
@@ -45,11 +48,11 @@ func New(cfg ProducerConfig, l Logger) (*Producer, error) {
 	return &Producer{client: cl, topic: cfg.Topic, logger: l}, nil
 }
 
-func (p *Producer) ProduceBatch(ctx context.Context, payloads []string) error {
+func (p *Producer) ProduceBatch(ctx context.Context, payloads [][]byte) error {
 	var records []*kgo.Record
 
 	for _, payload := range payloads {
-		records = append(records, &kgo.Record{Topic: p.topic, Value: []byte(payload)})
+		records = append(records, &kgo.Record{Value: payload})
 	}
 
 	err := p.client.ProduceSync(ctx, records...).FirstErr()

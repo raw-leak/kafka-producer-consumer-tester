@@ -44,9 +44,9 @@ func New() (*Logger, error) {
 	msgsTable := widgets.NewTable()
 	msgsTable.Title = "Message Processing Status"
 	msgsTable.Rows = [][]string{
-		{"Status", "In-progress", "Success", "Failed"},
-		{"Sent Events", "0", "0", "0"},
-		{"Processed Events", "0", "0", "0"},
+		{"Status", "In-progress", "Success", "Failed", "Total"},
+		{"Sent Events", "0", "0", "0", "0"},
+		{"Processed Events", "0", "0", "0", "0"},
 	}
 	msgsTable.TextStyle = ui.NewStyle(ui.ColorWhite)
 	msgsTable.TextAlignment = ui.AlignCenter
@@ -100,12 +100,19 @@ func New() (*Logger, error) {
 }
 
 func (l *Logger) updateMsgsTable() {
+	totalSent := l.sent.Failed + l.sent.InProgress + l.sent.Success
+	totalProcessed := l.processed.Failed + l.processed.InProgress + l.processed.Success
+
 	l.msgsTable.Rows[1][1] = fmt.Sprintf("%d", l.sent.InProgress)
 	l.msgsTable.Rows[1][2] = fmt.Sprintf("%d", l.sent.Success)
 	l.msgsTable.Rows[1][3] = fmt.Sprintf("%d", l.sent.Failed)
-	l.msgsTable.Rows[2][1] = fmt.Sprintf("%d", l.processed.InProgress)
-	l.msgsTable.Rows[2][2] = fmt.Sprintf("%d", l.processed.Success)
-	l.msgsTable.Rows[2][3] = fmt.Sprintf("%d", l.processed.Failed)
+	l.msgsTable.Rows[1][4] = fmt.Sprintf("%d", totalSent)
+
+	l.msgsTable.Rows[2][1] = fmt.Sprintf("%d - %.2f%%", l.processed.InProgress, calculateProgress(l.sent.InProgress, l.processed.InProgress))
+	l.msgsTable.Rows[2][2] = fmt.Sprintf("%d - %.2f%%", l.processed.Success, calculateProgress(l.sent.Success, l.processed.Success))
+	l.msgsTable.Rows[2][3] = fmt.Sprintf("%d - %.2f%%", l.processed.Failed, calculateProgress(l.sent.Failed, l.processed.Failed))
+	l.msgsTable.Rows[2][4] = fmt.Sprintf("%d - %.2f%%", l.processed.Failed, calculateProgress(totalSent, totalProcessed))
+
 	ui.Render(l.msgsTable)
 }
 
@@ -227,4 +234,11 @@ func (l *Logger) Shutdown() {
 	l.ticker.Stop()
 
 	ui.Close()
+}
+
+func calculateProgress(total, current int) float64 {
+	if total == 0 {
+		return 0
+	}
+	return (float64(current) / float64(total)) * 100
 }

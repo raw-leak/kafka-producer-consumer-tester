@@ -44,8 +44,8 @@ func newPConsumer(cl *kgo.Client, topic string, partition int32, l Logger) *pcon
 func (pc *pconsumer) consume(wg *sync.WaitGroup) {
 	defer close(pc.done)
 
-	pc.logger.Infof("starting partition-consumer for  t %s p %d", pc.topic, pc.partition)
-	defer pc.logger.Infof("closing partition-consumer for t %s p %d", pc.topic, pc.partition)
+	pc.logger.Infof("starting partition-consumer %d", pc.partition)
+	defer pc.logger.Infof("closing partition-consumer %d", pc.partition)
 
 	wg.Add(1)
 	defer wg.Done()

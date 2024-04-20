@@ -3,7 +3,7 @@ package verifier
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -20,6 +20,7 @@ const (
 
 type Producer interface {
 	Produce(context.Context, []byte) error
+	ProduceBatch(ctx context.Context, payloads [][]byte) error
 }
 
 type Consumer interface {
@@ -72,6 +73,12 @@ type Verifier struct {
 
 func New(p Producer, c Consumer, l Logger) *Verifier {
 	return &Verifier{
+		consumer: c,
+		producer: p,
+		logger:   l,
+
+		generatedRecords: sync.Map{},
+
 		failedRecords:     sync.Map{},
 		inProgressRecords: sync.Map{},
 		successRecords:    sync.Map{},
@@ -81,24 +88,15 @@ func New(p Producer, c Consumer, l Logger) *Verifier {
 			totalFailed     int32
 			totalInProgress int32
 			totalSuccess    int32
-		}{
-			totalGenerated:  0,
-			totalFailed:     0,
-			totalInProgress: 0,
-			totalSuccess:    0,
-		},
+		}{},
 
 		errs:    sync.Mutex{},
 		errList: []string{},
-
-		consumer: c,
-		producer: p,
-		logger:   l,
 	}
 }
 
 func (v *Verifier) Verify() error {
-	v.logger.Error("starting producer-consumer verification")
+	v.logger.Info("starting producer-consumer verification")
 	err := v.startVerification()
 	if err != nil {
 		return err
@@ -113,13 +111,7 @@ func (v *Verifier) Verify() error {
 }
 
 func (v *Verifier) printResult() {
-	if len(v.errList) > 0 {
-		for _, errMsg := range v.errList {
-			fmt.Println("TODO: print the error message", errMsg)
-		}
-	} else {
-		fmt.Println("TODO: print that there are no unexpected errors")
-	}
+	log.Printf("%d unexpected errors detected\n", len(v.errList))
 
 	v.generatedRecords.Range(func(key, value interface{}) bool {
 		state := value.(string)
@@ -141,16 +133,13 @@ func (v *Verifier) printResult() {
 		_, ok := targetMap.Load(id)
 
 		if !ok {
-			fmt.Println("TODO: indicate the the message with ID X and state Y has no been stored correctly")
-		} else {
-			fmt.Println("OK ... TODO")
+			log.Printf("message with ID %s has not been found in the %s state bucket", id, state)
 		}
 
 		return true
 	})
 }
 
-// partitionConsumer will be generated for each individual partition
 func (v *Verifier) partitionConsumer(res chan [][]byte) {
 	go func() {
 		v.logger.AddedProcessor()
@@ -160,7 +149,6 @@ func (v *Verifier) partitionConsumer(res chan [][]byte) {
 			for _, msg := range msgs {
 
 				var e Event
-
 				if err := json.Unmarshal(msg, &e); err != nil {
 					v.addUnexpectedError(err.Error())
 					continue
@@ -173,43 +161,51 @@ func (v *Verifier) partitionConsumer(res chan [][]byte) {
 }
 
 func (v *Verifier) startVerification() error {
-	wg := sync.WaitGroup{}
-
 	err := v.consumer.Consume(v.partitionConsumer)
 	if err != nil {
 		v.logger.Error("starting the consumer")
 		return err
 	}
 
-	// produce events
-	for i := 0; i < 100_000; i++ {
-		ctx := context.Background()
-
-		st := generateRandomState()
-		id := generateRandomID()
-
-		event := Event{ID: id, State: st}
-
-		payload, err := json.Marshal(event)
-		if err != nil {
-			v.addUnexpectedError(err.Error())
-			continue
-		}
-
-		err = v.producer.Produce(ctx, payload)
-		if err != nil {
-			v.addUnexpectedError(err.Error())
-			continue
-		}
-
-		v.storeSentRecord(id, st)
-	}
-
-	wg.Wait()
+	v.produceMessages()
 
 	return nil
 }
+func (v *Verifier) produceMessages() {
+	for i := 0; i < 1000; i++ {
+		ctx := context.Background()
 
+		payloads := make([][]byte, 1000)
+		events := []Event{}
+
+		for y := 0; y < 1_000; y++ {
+			st := generateRandomState()
+			id := generateRandomID()
+
+			event := Event{ID: id, State: st}
+
+			payload, err := json.Marshal(event)
+			if err != nil {
+				v.addUnexpectedError(err.Error())
+				continue
+			}
+
+			payloads = append(payloads, payload)
+			events = append(events, event)
+		}
+
+		err := v.producer.ProduceBatch(ctx, payloads)
+		if err != nil {
+			v.addUnexpectedError(err.Error())
+			continue
+		}
+
+		for _, e := range events {
+			v.storeSentRecord(e.ID, e.State)
+		}
+
+	}
+}
 func (v *Verifier) storeSentRecord(id, st string) {
 	v.generatedRecords.Store(id, st)
 	atomic.AddInt32(&v.counts.totalGenerated, 1)
@@ -257,7 +253,7 @@ func (v *Verifier) waitForCompletion() {
 	v.logger.Info("waiting for records processing")
 
 	tryCount := 0
-	maxTries := 10
+	maxTries := 60
 
 	for range ticker.C {
 		if v.allMessagesProcessed() {
