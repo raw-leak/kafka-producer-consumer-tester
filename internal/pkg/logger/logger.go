@@ -111,7 +111,7 @@ func (l *Logger) updateMsgsTable() {
 	l.msgsTable.Rows[2][1] = fmt.Sprintf("%d - %.2f%%", l.processed.InProgress, calculateProgress(l.sent.InProgress, l.processed.InProgress))
 	l.msgsTable.Rows[2][2] = fmt.Sprintf("%d - %.2f%%", l.processed.Success, calculateProgress(l.sent.Success, l.processed.Success))
 	l.msgsTable.Rows[2][3] = fmt.Sprintf("%d - %.2f%%", l.processed.Failed, calculateProgress(l.sent.Failed, l.processed.Failed))
-	l.msgsTable.Rows[2][4] = fmt.Sprintf("%d - %.2f%%", l.processed.Failed, calculateProgress(totalSent, totalProcessed))
+	l.msgsTable.Rows[2][4] = fmt.Sprintf("%d - %.2f%%", totalProcessed, calculateProgress(totalSent, totalProcessed))
 
 	ui.Render(l.msgsTable)
 }
