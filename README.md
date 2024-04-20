@@ -144,8 +144,10 @@ This solution is architecturally robust, deliberately embracing what might seem 
 The chosen architecture not only clarifies individual component responsibilities but also ensures that the system can scale efficiently and maintain high reliability. The use of interfaces and dependency injections makes the system highly testable and maintainable, while the strategic use of concurrency optimizes resource utilization and performance.
 
 ## Demo
+
 For a detailed demonstration of how to use our "Option A: Local Execution with Docker Support" solution, watch the demo below:
-<img src="./docs/images/demo.gif" width="500">
+
+![Demo](docs/images/demo.gif)
 
 ## Contributing
 
