@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"sync"
 
@@ -15,8 +16,9 @@ type Config struct {
 }
 
 var (
-	config Config
-	once   sync.Once
+	config      Config
+	once        sync.Once
+	configError error
 )
 
 func init() {
@@ -28,11 +30,12 @@ func init() {
 // Get reads config from environment. Once.
 func Get() (*Config, error) {
 	once.Do(func() {
+		// Process the environment variables and capture the error
 		err := envconfig.Process("", &config)
 		if err != nil {
-			log.Fatalf("Error processing config: %v", err)
+			configError = fmt.Errorf("error processing config: %v", err)
 		}
 	})
 
-	return &config, nil
+	return &config, configError
 }
