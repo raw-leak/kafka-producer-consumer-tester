@@ -250,7 +250,7 @@ func (v *Verifier) waitForCompletion() {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	v.logger.Info("waiting for records processing")
+	v.logger.Info("waiting records to be processed")
 
 	tryCount := 0
 	maxTries := 60

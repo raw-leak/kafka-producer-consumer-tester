@@ -85,7 +85,7 @@ func New() (*Logger, error) {
 	grid.Set(
 		ui.NewRow(2.3/float64(totalHeight), ui.NewCol(1.0, msgsTable)),
 		ui.NewRow(2.3/float64(totalHeight), ui.NewCol(1.0, partTable)),
-		ui.NewRow(10/float64(totalHeight), ui.NewCol(1.0, logsList)),
+		ui.NewRow(6/float64(totalHeight), ui.NewCol(1.0, logsList)),
 	)
 	ui.Render(grid)
 
