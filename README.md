@@ -50,10 +50,9 @@ The goal is to demonstrate proficiency in handling streaming data, ensuring data
 **Overview:**
 Red Panda will be deployed with Docker Compose for a reliable Kafka-compatible environment while executing the Golang app locally to utilize dynamic, interactive `termui` logs for real-time feedback.
 
-
 ### Installation
 
-1. Clone the repository: `git clone (https://github.com/raw-leak/kafka-producer-consumer-tester.git`
+1. Clone the repository: `git clone https://github.com/raw-leak/kafka-producer-consumer-tester.git`
 2. Navigate to the project directory: `cd kafka-producer-consumer-tester`
 
 ### Running
